@@ -988,13 +988,30 @@ table { border-collapse: collapse; width: 100%; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 600px) {
-  .page-content { padding: 14px; }
+  .page-content { padding: 12px; }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-value { font-size: 1.6rem; }
   .form-row { grid-template-columns: 1fr; }
   .topbar { padding: 0 14px; }
-  .modal { max-width: 100%; border-radius: var(--radius); }
+  .modal { max-width: calc(100vw - 24px); border-radius: var(--radius); }
+  .modal-header { padding: 16px; }
+  .modal-body { padding: 16px; }
   .reports-grid { grid-template-columns: 1fr; }
+  .form-actions { flex-direction: column; align-items: stretch; }
+  .form-actions .btn { width: 100%; justify-content: center; }
+  .card-header { flex-direction: column; align-items: stretch; }
+  .card-header .btn { width: 100%; justify-content: center; }
+  .card-body { padding: 16px; }
+  .filter-row { flex-direction: column; align-items: stretch; }
+  .filter-row > * { width: 100%; }
+  .search-bar { max-width: none; }
+  #daily-sheet-pane p,
+  #daily-sheet-preview-pane .daily-sheet-preview-box {
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+  #daily-sheet-preview-pane ul { padding-left: 16px; }
+  #daily-sheet-preview-pane li + li { margin-top: 4px; }
 }
 
 /* ============================
@@ -1508,7 +1525,7 @@ table { border-collapse: collapse; width: 100%; }
         <div style="max-width:640px;">
           <div class="card">
             <div class="card-header"><div class="card-title">Generate Daily Tracking Sheet</div></div>
-            <div class="card-body">
+            <div class="card-body" id="daily-sheet-pane">
               <p style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:20px;">
                 Print a blank paper tracking form for employees to manually record paint usage throughout the day. Data can be entered into the app afterward.
               </p>
@@ -1531,8 +1548,8 @@ table { border-collapse: collapse; width: 100%; }
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">Sheet Preview</div></div>
-            <div class="card-body">
-              <div style="background:var(--bg-primary); border-radius:var(--radius); padding:16px; font-size:0.8rem; color:var(--text-secondary);">
+            <div class="card-body" id="daily-sheet-preview-pane">
+              <div class="daily-sheet-preview-box" style="background:var(--bg-primary); border-radius:var(--radius); padding:16px; font-size:0.8rem; color:var(--text-secondary);">
                 <p style="font-weight:700; margin-bottom:8px;">The printed form includes:</p>
                 <ul style="list-style:disc; padding-left:18px; line-height:2;">
                   <li>Company header — Cabinet Expressions</li>

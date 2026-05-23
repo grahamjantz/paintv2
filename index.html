@@ -1325,16 +1325,14 @@ table { border-collapse: collapse; width: 100%; }
                   <th>Product</th>
                   <th>Brand / Code</th>
                   <th>Color</th>
-                  <th>Finish</th>
-                  <th>Stock (Containers)</th>
                   <th>Stock (Litres)</th>
                   <th>Status</th>
-                  <th>Location</th>
+                  <th>Supplier</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="inv-tbody">
-                <tr><td colspan="9"><div class="loading-state"><div class="loading-spinner"></div></div></td></tr>
+                <tr><td colspan="7"><div class="loading-state"><div class="loading-spinner"></div></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -1593,36 +1591,23 @@ table { border-collapse: collapse; width: 100%; }
     <div class="modal-body">
       <input type="hidden" id="product-edit-id">
       <div class="form-row">
-        <div class="form-field" style="grid-column:span 2;">
-          <label>Product Name *</label>
-          <input type="text" id="product-name" placeholder="e.g. Ultra White Lacquer">
-        </div>
         <div class="form-field">
           <label>Product Code</label>
           <input type="text" id="product-code" placeholder="e.g. UWL-200">
         </div>
         <div class="form-field">
           <label>Brand</label>
-          <input type="text" id="product-brand" placeholder="e.g. Sherwin-Williams">
+          <input type="text" id="product-brand" placeholder="e.g. Sivam">
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-field">
           <label>Color Name</label>
           <input type="text" id="product-color" placeholder="e.g. Polar White">
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-field">
-          <label>Finish Type</label>
-          <select id="product-finish">
-            <option value="">Select...</option>
-            <option>Matte</option>
-            <option>Satin</option>
-            <option>Semi-Gloss</option>
-            <option>Gloss</option>
-            <option>High Gloss</option>
-            <option>Flat</option>
-            <option>Eggshell</option>
-          </select>
+          <label>Color Code</label>
+          <input type="text" id="product-color-code" placeholder="e.g. RAL 9010">
         </div>
         <div class="form-field">
           <label>Paint Type</label>
@@ -1639,33 +1624,12 @@ table { border-collapse: collapse; width: 100%; }
             <option>Other</option>
           </select>
         </div>
-      </div>
-      <div class="form-row">
         <div class="form-field">
           <label>Supplier</label>
-          <input type="text" id="product-supplier" placeholder="e.g. Axiom Coatings">
-        </div>
-        <div class="form-field">
-          <label>Storage Location</label>
-          <input type="text" id="product-location" placeholder="e.g. Rack A-3">
+          <input type="text" id="product-supplier" placeholder="e.g. Richilieu">
         </div>
       </div>
-      <div class="section-title">Stock Levels</div>
       <div class="form-row">
-        <div class="form-field">
-          <label>Containers in Stock</label>
-          <input type="number" id="product-containers" min="0" placeholder="0" value="0">
-        </div>
-        <div class="form-field">
-          <label>Container Type</label>
-          <select id="product-container-type">
-            <option>Pails</option>
-            <option>Buckets</option>
-            <option>Containers</option>
-            <option>Cans</option>
-            <option>Drums</option>
-          </select>
-        </div>
         <div class="form-field">
           <label>Litres in Stock</label>
           <input type="number" id="product-litres" min="0" step="0.1" placeholder="0.0" value="0">
@@ -1887,13 +1851,8 @@ function syncRecord(collectionName, record) {
   if (!db) {
     return Promise.resolve({ synced: false, reason: 'firestore unavailable' });
   }
-  if (!store.currentUser || !store.currentUser.uid) {
-    return Promise.resolve({ synced: false, reason: 'not authenticated' });
-  }
 
-  return db.collection('users')
-    .doc(store.currentUser.uid)
-    .collection(collectionName)
+  return db.collection(collectionName)
     .doc(record.id)
     .set(record, { merge: true })
     .then(() => ({ synced: true }));
@@ -1989,6 +1948,34 @@ function handleLogout() {
   document.getElementById('login-page').style.display = 'flex';
 }
 
+function loadCollectionsFromFirestore() {
+  if (DEMO_MODE || !db) {
+    return Promise.resolve(false);
+  }
+
+  return Promise.all([
+    db.collection('paints').get(),
+    db.collection('usageLogs').get(),
+    db.collection('receivingLogs').get()
+  ]).then(([paintSnap, usageSnap, receivingSnap]) => {
+    const paints = paintSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const usageLogs = usageSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const receivingLogs = receivingSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (paints.length || usageLogs.length || receivingLogs.length) {
+      store.paints = paints;
+      store.usageLogs = usageLogs;
+      store.receivingLogs = receivingLogs;
+      saveStore('paints');
+      saveStore('usageLogs');
+      saveStore('receivingLogs');
+      return true;
+    }
+
+    return false;
+  }).catch(() => false);
+}
+
 // ============================
 // APP INIT
 // ============================
@@ -2001,9 +1988,13 @@ function initApp() {
   document.getElementById('user-name').textContent = name;
   document.getElementById('user-avatar').textContent = name[0].toUpperCase();
 
-  seedDemoData();
-  navigate('dashboard');
-  updateLowStockBadge();
+  loadCollectionsFromFirestore().then(hasFirestoreData => {
+    if (!hasFirestoreData && !store.paints.length && !store.usageLogs.length && !store.receivingLogs.length) {
+      seedDemoData();
+    }
+    navigate('dashboard');
+    updateLowStockBadge();
+  });
 }
 
 // Check for existing auth session
@@ -2139,9 +2130,22 @@ document.querySelectorAll('.modal-overlay').forEach(mo => {
 // HELPERS
 // ============================
 function getStockStatus(paint) {
-  if (paint.litres <= 0 && paint.containers <= 0) return 'out';
-  if (paint.litres <= paint.lowThreshold) return 'low';
+  if (!paint) return 'out';
+  const threshold = Number.isFinite(paint.lowThreshold) ? paint.lowThreshold : 5;
+  if (paint.litres <= 0) return 'out';
+  if (paint.litres <= threshold) return 'low';
   return 'healthy';
+}
+function getProductDisplayName(product) {
+  if (!product) return 'Unknown Product';
+  if (product.name) return product.name;
+  const brand = product.brand?.trim() || 'Sivam';
+  const color = product.color?.trim();
+  const code = product.code?.trim();
+  if (color && code) return `${brand} ${color} (${code})`;
+  if (color) return `${brand} ${color}`;
+  if (code) return `${brand} ${code}`;
+  return brand;
 }
 function statusBadge(status) {
   const map = { healthy: ['badge-green','In Stock'], low: ['badge-yellow','Low Stock'], out: ['badge-red','Out of Stock'] };
@@ -2250,12 +2254,11 @@ function renderDashboard() {
   document.getElementById('low-stock-count').textContent = lowItems.length + ' items';
   document.getElementById('dash-low-stock').innerHTML = lowItems.length ? `
     <table class="data-table">
-      <thead><tr><th>Product</th><th>Color</th><th>Containers</th><th>Litres</th><th>Status</th></tr></thead>
+      <thead><tr><th>Product</th><th>Color</th><th>Litres</th><th>Status</th></tr></thead>
       <tbody>${lowItems.map(p => `
         <tr>
-          <td><strong>${p.name}</strong><br><small style="color:var(--text-muted)">${p.brand}</small></td>
+          <td><strong>${getProductDisplayName(p)}</strong><br><small style="color:var(--text-muted)">${p.brand||'—'}</small></td>
           <td>${p.color||'—'}</td>
-          <td><span class="inv-qty">${p.containers} ${p.containerType}</span></td>
           <td><span class="inv-qty">${p.litres.toFixed(1)} L</span></td>
           <td>${statusBadge(getStockStatus(p))}</td>
         </tr>
@@ -2284,7 +2287,7 @@ function getFilteredInventory() {
   const brand = document.getElementById('inv-filter-brand').value;
   const finish = document.getElementById('inv-filter-finish').value;
   return store.paints.filter(p => {
-    if (q && !`${p.name} ${p.code} ${p.color} ${p.brand}`.toLowerCase().includes(q)) return false;
+    if (q && !`${getProductDisplayName(p)} ${p.code} ${p.color} ${p.brand}`.toLowerCase().includes(q)) return false;
     if (status && getStockStatus(p) !== status) return false;
     if (brand && p.brand !== brand) return false;
     if (finish && p.finish !== finish) return false;
@@ -2297,7 +2300,7 @@ function renderInventory() {
   document.getElementById('inv-count-label').textContent = `Products (${items.length})`;
   const tbody = document.getElementById('inv-tbody');
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
       <h3>No Products Found</h3><p>Try adjusting your search or filters.</p>
     </div></td></tr>`;
@@ -2305,12 +2308,12 @@ function renderInventory() {
   }
   tbody.innerHTML = items.map(p => {
     const status = getStockStatus(p);
-    const maxLitres = Math.max(p.litres, p.lowThreshold * 3, 20);
+    const maxLitres = Math.max(p.litres, (p.lowThreshold || 5) * 3, 20);
     const pct = Math.min(100, (p.litres / maxLitres) * 100);
     const barColor = status === 'healthy' ? 'var(--green)' : status === 'low' ? 'var(--yellow)' : 'var(--red)';
     return `<tr>
       <td>
-        <div style="font-weight:700">${p.name}</div>
+        <div style="font-weight:700">${getProductDisplayName(p)}</div>
         ${p.type ? `<div style="font-size:0.75rem;color:var(--text-muted)">${p.type}</div>` : ''}
       </td>
       <td>
@@ -2318,14 +2321,12 @@ function renderInventory() {
         <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)">${p.code||'—'}</div>
       </td>
       <td>${p.color ? `<span class="color-swatch" style="background:${colorToHex(p.color)}"></span>${p.color}` : '—'}</td>
-      <td>${p.finish||'—'}</td>
-      <td><span class="inv-qty">${p.containers} ${p.containerType}</span></td>
       <td>
         <span class="inv-qty">${p.litres.toFixed(1)} L</span>
         <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
       </td>
       <td>${statusBadge(status)}</td>
-      <td style="font-size:0.8rem;color:var(--text-muted)">${p.location||'—'}</td>
+      <td>${p.supplier||'—'}</td>
       <td>
         <div class="actions">
           <button class="btn btn-sm btn-secondary" onclick="openEditProduct('${p.id}')">Edit</button>
@@ -2348,15 +2349,14 @@ function colorToHex(colorName) {
 function openAddProduct() {
   document.getElementById('modal-product-title').textContent = 'Add Product';
   document.getElementById('product-edit-id').value = '';
-  ['product-name','product-code','product-brand','product-color','product-finish','product-type',
-   'product-supplier','product-location','product-notes'].forEach(id => {
+  ['product-code','product-brand','product-color','product-color-code','product-type','product-supplier','product-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  document.getElementById('product-containers').value = 0;
+  document.getElementById('product-brand').value = 'Sivam';
+  document.getElementById('product-supplier').value = 'Richilieu';
   document.getElementById('product-litres').value = 0;
   document.getElementById('product-low-threshold').value = 5;
-  document.getElementById('product-container-type').value = 'Pails';
   openModal('modal-product');
 }
 
@@ -2365,16 +2365,12 @@ function openEditProduct(id) {
   if (!p) return;
   document.getElementById('modal-product-title').textContent = 'Edit Product';
   document.getElementById('product-edit-id').value = p.id;
-  document.getElementById('product-name').value = p.name;
   document.getElementById('product-code').value = p.code||'';
-  document.getElementById('product-brand').value = p.brand||'';
+  document.getElementById('product-brand').value = p.brand || 'Sivam';
   document.getElementById('product-color').value = p.color||'';
-  document.getElementById('product-finish').value = p.finish||'';
+  document.getElementById('product-color-code').value = p.colorCode||'';
   document.getElementById('product-type').value = p.type||'';
-  document.getElementById('product-supplier').value = p.supplier||'';
-  document.getElementById('product-location').value = p.location||'';
-  document.getElementById('product-containers').value = p.containers||0;
-  document.getElementById('product-container-type').value = p.containerType||'Pails';
+  document.getElementById('product-supplier').value = p.supplier || 'Richilieu';
   document.getElementById('product-litres').value = p.litres||0;
   document.getElementById('product-low-threshold').value = p.lowThreshold||5;
   document.getElementById('product-notes').value = p.notes||'';
@@ -2382,34 +2378,46 @@ function openEditProduct(id) {
 }
 
 function saveProduct() {
-  const name = document.getElementById('product-name').value.trim();
-  if (!name) { toast('Product name is required.', 'error'); return; }
   const editId = document.getElementById('product-edit-id').value;
+  const brand = document.getElementById('product-brand').value.trim() || 'Sivam';
+  const supplier = document.getElementById('product-supplier').value.trim() || 'Richilieu';
+  const color = document.getElementById('product-color').value.trim();
+  const colorCode = document.getElementById('product-color-code').value.trim();
+  const code = document.getElementById('product-code').value.trim();
+  const type = document.getElementById('product-type').value;
+  const litres = parseFloat(document.getElementById('product-litres').value)||0;
+  const lowThreshold = parseFloat(document.getElementById('product-low-threshold').value)||5;
+  const notes = document.getElementById('product-notes').value.trim();
+  const name = getProductDisplayName({ brand, color, code });
+
+  const now = new Date().toISOString();
   const data = {
     name,
-    code: document.getElementById('product-code').value.trim(),
-    brand: document.getElementById('product-brand').value.trim(),
-    color: document.getElementById('product-color').value.trim(),
-    finish: document.getElementById('product-finish').value,
-    type: document.getElementById('product-type').value,
-    supplier: document.getElementById('product-supplier').value.trim(),
-    location: document.getElementById('product-location').value.trim(),
-    containers: parseFloat(document.getElementById('product-containers').value)||0,
-    containerType: document.getElementById('product-container-type').value,
-    litres: parseFloat(document.getElementById('product-litres').value)||0,
-    lowThreshold: parseFloat(document.getElementById('product-low-threshold').value)||5,
-    notes: document.getElementById('product-notes').value.trim(),
+    code,
+    brand,
+    color,
+    colorCode,
+    type,
+    supplier,
+    litres,
+    lowThreshold,
+    notes,
+    finish: '',
+    location: '',
+    containers: 0,
+    containerType: '',
+    updatedAt: now,
   };
 
   let record;
   if (editId) {
     const idx = store.paints.findIndex(p=>p.id===editId);
     if (idx >= 0) {
-      record = { ...store.paints[idx], ...data, updatedAt: new Date().toISOString() };
+      record = { ...store.paints[idx], ...data, createdAt: store.paints[idx].createdAt || now };
       store.paints[idx] = record;
     }
   } else {
-    record = { id: genId(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    record = { id: genId(), ...data, createdAt: now };
     store.paints.push(record);
   }
 
@@ -2425,7 +2433,7 @@ function saveProduct() {
 
 function deleteProduct(id) {
   const p = store.paints.find(x=>x.id===id);
-  showConfirm('Delete Product', `Delete "${p?.name}"? This cannot be undone.`, () => {
+  showConfirm('Delete Product', `Delete "${getProductDisplayName(p)}"? This cannot be undone.`, () => {
     store.paints = store.paints.filter(x=>x.id!==id);
     saveStore('paints');
     renderInventory();
@@ -2442,7 +2450,7 @@ function populateUsageDropdowns() {
   const prodSel = document.getElementById('usage-product');
   const curVal = prodSel.value;
   prodSel.innerHTML = '<option value="">Select product...</option>' +
-    store.paints.map(p=>`<option value="${p.id}">${p.name} (${p.color||'no color'})</option>`).join('');
+    store.paints.map(p=>`<option value="${p.id}">${getProductDisplayName(p)} (${p.color||'no color'})</option>`).join('');
   prodSel.value = curVal;
 
   // Job datalist
@@ -2465,7 +2473,7 @@ function populateUsageDropdowns() {
   const rpSel = document.getElementById('recv-product');
   const rv = rpSel.value;
   rpSel.innerHTML = '<option value="">Select product...</option>' +
-    store.paints.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    store.paints.map(p=>`<option value="${p.id}">${getProductDisplayName(p)}</option>`).join('');
   rpSel.value = rv;
 }
 
@@ -2564,7 +2572,7 @@ function saveUsage() {
   const editId = document.getElementById('usage-edit-id').value;
   const data = {
     date, job, productId,
-    productName: product?.name || '',
+    productName: getProductDisplayName(product),
     color: document.getElementById('usage-color').value.trim() || product?.color || '',
     mixed: parseFloat(document.getElementById('usage-mixed').value)||0,
     resprays: parseFloat(document.getElementById('usage-resprays').value)||0,
@@ -2738,7 +2746,7 @@ function saveReceiving() {
   const litres = parseFloat(document.getElementById('recv-litres').value)||0;
   const data = {
     date, supplier, productId,
-    productName: product?.name||'',
+    productName: getProductDisplayName(product),
     containers, litres,
     employee: document.getElementById('recv-employee').value.trim(),
     notes: document.getElementById('recv-notes').value.trim(),
@@ -2750,11 +2758,10 @@ function saveReceiving() {
 
   // Update inventory
   if (product) {
-    product.containers = (product.containers||0) + containers;
     product.litres = (product.litres||0) + litres;
     product.updatedAt = new Date().toISOString();
     saveStore('paints');
-    syncRecordWithFeedback('paints', product, `Inventory updated: +${containers} containers, +${litres}L added to ${product.name}`);
+    syncRecordWithFeedback('paints', product, `Inventory updated: +${litres}L added to ${getProductDisplayName(product)}`);
     updateLowStockBadge();
   }
 

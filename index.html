@@ -1880,6 +1880,40 @@ function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
+function syncRecord(collectionName, record) {
+  if (DEMO_MODE) {
+    return Promise.resolve({ synced: false, reason: 'demo mode' });
+  }
+  if (!db) {
+    return Promise.resolve({ synced: false, reason: 'firestore unavailable' });
+  }
+  if (!store.currentUser || !store.currentUser.uid) {
+    return Promise.resolve({ synced: false, reason: 'not authenticated' });
+  }
+
+  return db.collection('users')
+    .doc(store.currentUser.uid)
+    .collection(collectionName)
+    .doc(record.id)
+    .set(record, { merge: true })
+    .then(() => ({ synced: true }));
+}
+
+function syncRecordWithFeedback(collectionName, record, successMessage) {
+  return syncRecord(collectionName, record)
+    .then(result => {
+      if (result.synced && successMessage) toast(successMessage, 'success');
+      if (!result.synced && successMessage) {
+        toast('Saved locally, but Firestore sync is not available right now.', 'warning');
+      }
+      return result.synced;
+    })
+    .catch(err => {
+      toast(`Saved locally, but Firestore sync failed: ${err.message}`, 'warning');
+      return false;
+    });
+}
+
 // Seed demo data if empty
 function seedDemoData() {
   if (store.paints.length > 0) return;
@@ -2366,15 +2400,23 @@ function saveProduct() {
     lowThreshold: parseFloat(document.getElementById('product-low-threshold').value)||5,
     notes: document.getElementById('product-notes').value.trim(),
   };
+
+  let record;
   if (editId) {
     const idx = store.paints.findIndex(p=>p.id===editId);
-    if (idx >= 0) store.paints[idx] = { ...store.paints[idx], ...data };
-    toast('Product updated.', 'success');
+    if (idx >= 0) {
+      record = { ...store.paints[idx], ...data, updatedAt: new Date().toISOString() };
+      store.paints[idx] = record;
+    }
   } else {
-    store.paints.push({ id: genId(), ...data, createdAt: new Date().toISOString() });
-    toast('Product added!', 'success');
+    record = { id: genId(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    store.paints.push(record);
   }
+
   saveStore('paints');
+  if (record) {
+    syncRecordWithFeedback('paints', record, editId ? 'Product updated.' : 'Product added!');
+  }
   closeModal('modal-product');
   renderInventory();
   updateInventoryFilters();
@@ -2530,15 +2572,23 @@ function saveUsage() {
     employee: document.getElementById('usage-employee').value.trim(),
     notes: document.getElementById('usage-notes').value.trim(),
   };
+
+  let record;
   if (editId) {
     const idx = store.usageLogs.findIndex(u=>u.id===editId);
-    if (idx>=0) store.usageLogs[idx] = { ...store.usageLogs[idx], ...data };
-    toast('Usage entry updated.', 'success');
+    if (idx>=0) {
+      record = { ...store.usageLogs[idx], ...data, updatedAt: new Date().toISOString() };
+      store.usageLogs[idx] = record;
+    }
   } else {
-    store.usageLogs.push({ id: genId(), ...data, createdAt: new Date().toISOString() });
-    toast('Usage logged!', 'success');
+    record = { id: genId(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    store.usageLogs.push(record);
   }
+
   saveStore('usageLogs');
+  if (record) {
+    syncRecordWithFeedback('usageLogs', record, editId ? 'Usage entry updated.' : 'Usage logged!');
+  }
   closeModal('modal-usage');
   renderUsage();
 }
@@ -2694,18 +2744,21 @@ function saveReceiving() {
     notes: document.getElementById('recv-notes').value.trim(),
   };
 
-  store.receivingLogs.push({ id: genId(), ...data, createdAt: new Date().toISOString() });
+  const record = { id: genId(), ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  store.receivingLogs.push(record);
   saveStore('receivingLogs');
 
   // Update inventory
   if (product) {
     product.containers = (product.containers||0) + containers;
     product.litres = (product.litres||0) + litres;
+    product.updatedAt = new Date().toISOString();
     saveStore('paints');
+    syncRecordWithFeedback('paints', product, `Inventory updated: +${containers} containers, +${litres}L added to ${product.name}`);
     updateLowStockBadge();
-    toast(`Inventory updated: +${containers} containers, +${litres}L added to ${product.name}`, 'success');
   }
 
+  syncRecordWithFeedback('receivingLogs', record, 'Shipment recorded!');
   closeModal('modal-receiving');
   renderReceiving();
 }

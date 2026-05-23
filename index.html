@@ -2316,7 +2316,6 @@ function renderInventory() {
         <div style="font-weight:600">${p.brand||'—'}</div>
         <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)">${p.code||'—'}</div>
       </td>
-      <td>${p.color ? `<span class="color-swatch" style="background:${colorToHex(p.color)}"></span>${p.color}` : '—'}</td>
       <td>
         <span class="inv-qty">${p.litres.toFixed(1)} L</span>
         <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>

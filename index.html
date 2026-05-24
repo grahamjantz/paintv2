@@ -94,35 +94,34 @@ table { border-collapse: collapse; width: 100%; }
    ============================ */
 #login-page {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   min-height: 100vh;
   background: var(--gray-900);
-  position: fixed;
-  inset: 0;
+  position: relative;
   z-index: 1000;
+  padding: 24px 16px 40px;
+  overflow-y: auto;
 }
 [data-theme="dark"] #login-page { background: #0a0a0c; }
 
 .login-panel {
   width: 100%;
   max-width: 420px;
-  padding: 20px;
+  padding: 28px 20px 40px;
 }
 .login-logo {
   text-align: center;
-  margin-bottom: 36px;
+  margin-top: 12px;
+  margin-bottom: 40px;
 }
-.login-logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px; height: 64px;
-  background: var(--orange);
+.login-logo img {
+  width: 200px;
+  height: auto;
+  display: block;
+  margin: 0 auto 16px;
   border-radius: 14px;
-  margin-bottom: 16px;
 }
-.login-logo-mark svg { width: 36px; height: 36px; fill: white; }
 .login-logo h1 {
   font-family: var(--font-condensed);
   font-size: 1.8rem;
@@ -145,11 +144,8 @@ table { border-collapse: collapse; width: 100%; }
   border-radius: var(--radius-lg);
   padding: 32px;
 }
-.login-card h2 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #f0eff0;
-  margin-bottom: 24px;
+#auth-title {
+  display: none;
 }
 .login-error {
   background: rgba(217,48,37,0.15);
@@ -184,6 +180,27 @@ table { border-collapse: collapse; width: 100%; }
   transition: border-color 0.2s;
 }
 .form-group input:focus { border-color: var(--orange); }
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.auth-tab {
+  border: 1px solid #3d3d42;
+  background: #252529;
+  color: #a8a6a9;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.auth-tab.active {
+  background: rgba(242, 90, 25, 0.15);
+  border-color: rgba(242, 90, 25, 0.55);
+  color: #fff;
+}
 .btn-login {
   width: 100%;
   padding: 13px;
@@ -199,11 +216,42 @@ table { border-collapse: collapse; width: 100%; }
 }
 .btn-login:hover { background: var(--orange-dark); }
 .btn-login:active { transform: scale(0.99); }
-.login-demo-note {
+.btn-google {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid #3d3d42;
+  background: #252529;
+  color: #f0eff0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+.auth-divider {
+  position: relative;
   text-align: center;
-  margin-top: 16px;
+  margin-top: 18px;
+  color: var(--text-muted);
   font-size: 0.8rem;
-  color: #6b696c;
+}
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #2d2d31;
+}
+.auth-divider span {
+  position: relative;
+  padding: 0 10px;
+  background: #1e1e21;
 }
 
 /* ============================
@@ -233,14 +281,6 @@ table { border-collapse: collapse; width: 100%; }
   align-items: center;
   gap: 10px;
 }
-.sidebar-logo-mark {
-  width: 36px; height: 36px;
-  background: var(--orange);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.sidebar-logo-mark svg { width: 20px; height: 20px; fill: white; }
 .sidebar-logo-text {
   flex: 1;
   min-width: 0;
@@ -1181,15 +1221,21 @@ table { border-collapse: collapse; width: 100%; }
 <div id="login-page">
   <div class="login-panel">
     <div class="login-logo">
-      <div class="login-logo-mark">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
-      <h1>Cabinet Expressions</h1>
+      <img src="logo-small.png" alt="Cabinet Expressions logo">
+      <!-- <h1>Cabinet Expressions</h1> -->
       <p>Paint Tracker</p>
     </div>
     <div class="login-card">
-      <h2>Sign In</h2>
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="auth-tab-signin" onclick="setAuthMode('signin')">Sign In</button>
+        <button type="button" class="auth-tab" id="auth-tab-signup" onclick="setAuthMode('signup')">Sign Up</button>
+      </div>
+      <h2 id="auth-title">Sign In</h2>
       <div id="login-error" class="login-error"></div>
+      <div class="form-group" id="auth-name-group" style="display:none;">
+        <label>Full Name</label>
+        <input type="text" id="login-name" placeholder="Your Name" autocomplete="name">
+      </div>
       <div class="form-group">
         <label>Email Address</label>
         <input type="email" id="login-email" placeholder="you@cabinetexpressions.com" autocomplete="email">
@@ -1198,9 +1244,17 @@ table { border-collapse: collapse; width: 100%; }
         <label>Password</label>
         <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn-login" onclick="handleLogin()">Sign In</button>
+      <div class="form-group" id="auth-confirm-group" style="display:none;">
+        <label>Confirm Password</label>
+        <input type="password" id="login-confirm-password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn-login" id="auth-submit-btn" onclick="handlePrimaryAuth()">Sign In</button>
+      <div class="auth-divider"><span>or</span></div>
+      <button type="button" class="btn-google" onclick="handleGoogleAuth()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 11.1h-9.18v2.72h5.7c-.24 1.47-1.75 4.31-5.7 4.31-3.42 0-6.2-2.83-6.2-6.31s2.78-6.31 6.2-6.31c1.95 0 3.25.83 4 1.53l2.72-2.64C16.87 3.49 14.68 2.5 12.17 2.5 7.84 2.5 4.19 6.13 4.19 10.5c0 4.37 3.65 8 8 8 4.62 0 7.66-3.24 7.66-7.8 0-.53-.06-1.04-.14-1.6z"/><path fill="#34A853" d="M3.72 7.53l3.25 2.38c.88-2.16 3.07-3.7 5.2-3.7 1.66 0 3.13.57 4.28 1.68l2.56-2.49C16.63 3.46 14.54 2.5 12.17 2.5 8.61 2.5 5.64 4.51 3.72 7.53z"/><path fill="#FBBC05" d="M12.17 20.5c2.56 0 4.72-.86 6.29-2.32l-2.91-2.38c-.8.56-1.83.93-3.38.93-2.58 0-4.76-1.74-5.54-4.1l-3.13 2.41C5.39 18.68 8.5 20.5 12.17 20.5z"/><path fill="#EA4335" d="M21.35 11.1H12.17v2.72h5.7c-.24 1.47-1.75 4.31-5.7 4.31-3.42 0-6.2-2.83-6.2-6.31 0-.66.12-1.29.34-1.88l-3.14-2.42C3.57 7.5 3.14 8.95 3.14 10.5c0 4.37 3.65 8 8 8 4.62 0 7.66-3.24 7.66-7.8 0-.53-.06-1.04-.14-1.6z"/></svg>
+        Continue with Google
+      </button>
     </div>
-    <p class="login-demo-note">Demo: any email + any password to enter</p>
   </div>
 </div>
 
@@ -1247,12 +1301,8 @@ table { border-collapse: collapse; width: 100%; }
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <!-- <div class="sidebar-logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div> -->
       <div class="sidebar-logo-text">
         <img src="logo-small.png" alt="Cabinet Expressions logo">
-        <!-- <h1>Cabinet Expr.</h1> -->
         <span>Paint Tracker</span>
       </div>
     </div>
@@ -1979,38 +2029,117 @@ function seedDemoData() {
 // ============================
 // AUTH
 // ============================
-function handleLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  errEl.classList.remove('show');
+let authMode = 'signin';
 
-  if (!email || !pass) {
-    errEl.textContent = 'Please enter your email and password.';
-    errEl.classList.add('show');
+function showAuthError(message) {
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = message;
+  errEl.classList.toggle('show', Boolean(message));
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isSignup = mode === 'signup';
+  document.getElementById('auth-title').textContent = isSignup ? 'Sign Up' : 'Sign In';
+  document.getElementById('auth-name-group').style.display = isSignup ? 'block' : 'none';
+  document.getElementById('auth-confirm-group').style.display = isSignup ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = isSignup ? 'Create Account' : 'Sign In';
+  document.getElementById('auth-tab-signin').classList.toggle('active', !isSignup);
+  document.getElementById('auth-tab-signup').classList.toggle('active', isSignup);
+  showAuthError('');
+}
+
+function getAuthFormValues() {
+  return {
+    name: document.getElementById('login-name').value.trim(),
+    email: document.getElementById('login-email').value.trim(),
+    password: document.getElementById('login-password').value,
+    confirmPassword: document.getElementById('login-confirm-password').value,
+  };
+}
+
+function finalizeAuth(user, fallbackDisplayName) {
+  const displayName = user.displayName || fallbackDisplayName || user.email.split('@')[0];
+  store.currentUser = { ...user, displayName };
+  initApp();
+}
+
+function handleLogin() {
+  const { email, password } = getAuthFormValues();
+  showAuthError('');
+
+  if (!email || !password) {
+    showAuthError('Please enter your email and password.');
     return;
   }
 
   if (DEMO_MODE || firebaseConfig.apiKey.startsWith('REPLACE')) {
-    // Demo login
-    store.currentUser = { email, displayName: email.split('@')[0], uid: 'demo' };
-    initApp();
+    finalizeAuth({ email, uid: 'demo' }, email.split('@')[0]);
     return;
   }
 
-  auth.signInWithEmailAndPassword(email, pass)
-    .then(cred => {
-      store.currentUser = cred.user;
-      initApp();
-    })
-    .catch(err => {
-      errEl.textContent = err.message;
-      errEl.classList.add('show');
-    });
+  auth.signInWithEmailAndPassword(email, password)
+    .then(cred => finalizeAuth(cred.user, email.split('@')[0]))
+    .catch(err => showAuthError(err.message));
 }
 
-document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
-document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+function handleSignUp() {
+  const { name, email, password, confirmPassword } = getAuthFormValues();
+  showAuthError('');
+
+  if (!email || !password) {
+    showAuthError('Please enter your email and password.');
+    return;
+  }
+  if (password !== confirmPassword) {
+    showAuthError('Passwords do not match.');
+    return;
+  }
+
+  if (DEMO_MODE || firebaseConfig.apiKey.startsWith('REPLACE')) {
+    finalizeAuth({ email, uid: 'demo' }, name || email.split('@')[0]);
+    return;
+  }
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(cred => {
+      const user = cred.user;
+      const fallbackName = name || email.split('@')[0];
+      if (name) {
+        return user.updateProfile({ displayName: name }).then(() => finalizeAuth({ ...user, displayName: name }, fallbackName));
+      }
+      return finalizeAuth(user, fallbackName);
+    })
+    .catch(err => showAuthError(err.message));
+}
+
+function handlePrimaryAuth() {
+  if (authMode === 'signup') {
+    handleSignUp();
+  } else {
+    handleLogin();
+  }
+}
+
+function handleGoogleAuth() {
+  showAuthError('');
+
+  if (DEMO_MODE || firebaseConfig.apiKey.startsWith('REPLACE')) {
+    showAuthError('Google sign-in is unavailable in demo mode.');
+    return;
+  }
+
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(cred => finalizeAuth(cred.user, cred.user.email.split('@')[0]))
+    .catch(err => showAuthError(err.message));
+}
+
+document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') handlePrimaryAuth(); });
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') handlePrimaryAuth(); });
+document.getElementById('login-confirm-password').addEventListener('keydown', e => { if (e.key === 'Enter') handlePrimaryAuth(); });
+
+document.getElementById('login-name').addEventListener('keydown', e => { if (e.key === 'Enter') handlePrimaryAuth(); });
 
 function handleLogout() {
   if (auth && !DEMO_MODE) auth.signOut();

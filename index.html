@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cabinet Expressions — Paint Tracker</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
@@ -240,7 +241,22 @@ table { border-collapse: collapse; width: 100%; }
   flex-shrink: 0;
 }
 .sidebar-logo-mark svg { width: 20px; height: 20px; fill: white; }
-.sidebar-logo-text { flex: 1; min-width: 0; }
+.sidebar-logo-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.sidebar-logo-text img {
+  width: 100%;
+  max-width: 128px;
+  height: auto;
+  display: block;
+  margin-bottom: 4px;
+  border-radius: 6px;
+}
 .sidebar-logo-text h1 {
   font-family: var(--font-condensed);
   font-size: 1rem;
@@ -359,11 +375,27 @@ table { border-collapse: collapse; width: 100%; }
 .topbar-menu-btn:hover { background: var(--bg-primary); }
 .topbar-title {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   font-family: var(--font-condensed);
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: 0.3px;
+}
+.topbar-title img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+.topbar-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 
@@ -1215,11 +1247,12 @@ table { border-collapse: collapse; width: 100%; }
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="sidebar-logo-mark">
+      <!-- <div class="sidebar-logo-mark">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
+      </div> -->
       <div class="sidebar-logo-text">
-        <h1>Cabinet Expr.</h1>
+        <img src="logo-small.png" alt="Cabinet Expressions logo">
+        <!-- <h1>Cabinet Expr.</h1> -->
         <span>Paint Tracker</span>
       </div>
     </div>
@@ -1292,7 +1325,10 @@ table { border-collapse: collapse; width: 100%; }
       <button class="topbar-menu-btn btn-icon" onclick="openSidebar()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-title" id="page-title">
+        <img src="logo-small.png" alt="Cabinet Expressions logo">
+        <span class="topbar-title-text">Dashboard</span>
+      </div>
       <div class="topbar-actions" id="topbar-actions"></div>
     </div>
 
